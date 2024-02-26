@@ -7,7 +7,7 @@ version: "3.9"
 #
 
 # alpine spin needed for bcrypt support
-x-qgis-server-image: &qgis-server-image opengisch/qgis-server:stable
+x-qgis-server-image: &qgis-server-image opengisch/qgis-server:nightly
 
 # 
 # VOLUMES
@@ -36,8 +36,10 @@ services:
     image: *qgis-server-image
     env_file: .env
     environment:
-      # Do not run the embedded copy of nginx
+      # run the embedded copy of nginx
       SKIP_NGINX: 0
+      # See notes at
+      QGIS_SERVER_PROJECT_FILE: "/io/data/teamengine_wms_130/teamengine_wms_130.qgs"
       # Improve rendering performance
       QGIS_SERVER_PARALLEL_RENDERING: "true"
       QGIS_SERVER_MAX_THREADS: 4
@@ -89,7 +91,8 @@ services:
      # to support it.
      # See https://gis.stackexchange.com/questions/224188/geopackage-error-is-mounted-and-in-wal-mode-this-combination-is-not-allowed
      #- qgis_projects:/io/data:ro
-     - qgis_projects:/io/data
+     # The data dir is downloaded from the ogr test suite. See shell.nix
+     - ./data:/io/data/teamengine_wms_130
      # 
      # qgis_plugins
      # |
