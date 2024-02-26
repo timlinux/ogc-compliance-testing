@@ -93,6 +93,8 @@ services:
      #- qgis_projects:/io/data:ro
      # The data dir is downloaded from the ogr test suite. See shell.nix
      - ./data:/io/data/teamengine_wms_130
+     # Dirty hack to make paths work for data in the ogc test project
+     - ./data:/data
      # 
      # qgis_plugins
      # |
