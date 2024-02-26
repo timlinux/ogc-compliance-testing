@@ -1,0 +1,136 @@
+version: "3.9"
+
+# This docker compose uses profiles - see https://docs.docker.com/compose/profiles/
+
+# 
+# DOCKER IMAGES
+#
+
+# alpine spin needed for bcrypt support
+x-qgis-server-image: &qgis-server-image opengisch/qgis-server:stable
+
+# 
+# VOLUMES
+#
+
+# Generally we are using docker volumes for all volumes
+# except conf files which are host mounted volumes out
+# of our git repo.
+# 
+
+volumes:
+  # Mounted in to QGIS Server for serving QGIS projects
+  qgis_projects:
+  # Mounted in to QGIS Server for serving QGIS fonts
+  qgis_fonts:
+  # Mounted in to QGIS Server for serving QGIS svgs
+  qgis_svg:
+
+#
+# SERVICES
+#
+
+services:
+ 
+  qgis-server:
+    image: *qgis-server-image
+    env_file: .env
+    environment:
+      # Do not run the embedded copy of nginx
+      SKIP_NGINX: 0
+      # Improve rendering performance
+      QGIS_SERVER_PARALLEL_RENDERING: "true"
+      QGIS_SERVER_MAX_THREADS: 4
+      # Limit the maximum size returned by a GetMap
+      QGIS_SERVER_WMS_MAX_HEIGHT: 5000
+      QGIS_SERVER_WMS_MAX_WIDTH: 5000
+      # Verbose logging
+      QGIS_SERVER_LOG_LEVEL: 0
+      # Initialize the authentication system
+      # creates or uses qgis-auth.db in ~/.qgis3/ or directory
+      # defined by QGIS_AUTH_DB_DIR_PATH env variable
+      # set the master password as first line of file defined by
+      # QGIS_AUTH_PASSWORD_FILE env variable
+      # (QGIS_AUTH_PASSWORD_FILE variable removed from environment
+      # after accessing)
+      # See also volume mounts below
+      QGIS_AUTH_DB_DIR_PATH: /tmp/
+      QGIS_AUTH_PASSWORD_FILE: /tmp/qgis-auth-pwd.txt
+      # For OGC API
+      # # Landing page plugin projects directory
+      #QGIS_SERVER_LANDING_PAGE_PROJECTS_DIRECTORIES ${QGIS_SERVER_LANDING_PAGE_PROJECTS_DIRECTORIES}
+      #QGIS_SERVER_LANDING_PAGE_PROJECTS_PG_CONNECTIONS postgresql://${POSTGRES_USER}:${POSTGRES_PASS}@postgis:5432?sslmode=disable&dbname=${POSTGRES_DBNAME}&schema=public`
+    ports:
+      - "8080:80"
+      - "9993"
+    networks:
+     - gis-stack
+    volumes:
+     # Data should be mount RO when working
+     # with GeoPackages and more than one QGIS container
+     # Data dir structure
+     # $(pwd)/qgis_projects must have the following structure:
+     #
+     # data
+     # |
+     # |-- <project_name>
+     #   |-- <project_name>.qgs
+     # 
+     # The data dir is mounted in the SCP volume
+     # too so that you can upload your projects easily
+     # using then have them published
+     #
+     # It would be much nicer to mount this RO
+     # but when working with GPKG files QGIS wants to 
+     # create wal and shm files and your projects wont load
+     # if it can't
+     # There is an option to disable creating WAL files 
+     # in QGIS but I havent looked into how to set up QGIS Server
+     # to support it.
+     # See https://gis.stackexchange.com/questions/224188/geopackage-error-is-mounted-and-in-wal-mode-this-combination-is-not-allowed
+     #- qgis_projects:/io/data:ro
+     - qgis_projects:/io/data
+     # 
+     # qgis_plugins
+     # |
+     # |-- <plugin_name>
+     #   |-- <plugin_code>.py
+     #   |-- metadata.txt
+     #   |-- __init__.py
+     - ./qgis_plugins:/io/plugins
+     #  
+     # Custom fonts are loaded into /usr/share/fonts. fc-cache is
+     # run when container is started.
+     - qgis_fonts:/usr/share/fonts
+     - qgis_svg:/var/lib/qgis/.local/share/QGIS/QGIS3/profiles/default/svg
+     - ./conf/qgis_conf/auth-db/qgis-auth.db:/tmp/qgis-auth.db
+     - ./conf/qgis_conf/auth-db/qgis-auth-pwd.txt:/tmp/qgis-auth-pwd.txt
+     # Working path for the pg_service file if using
+     # openquake/qgis-server:stable
+     # See https://github.com/gem/oq-qgis-server/issues/54
+     # The service file contains two service definitions
+     # nginx - used for connecting to the database to load a QGIS
+     #         project stored in the database
+     #         In that case you cannot yet use qgis-auth.db
+     #         database for user/pass credentials
+     # smallholding - used for layer definitions. This service has
+     #         no user/pass data and 
+     #         instead we fetch those credentials from the qgis
+     #         authdb
+     - ./conf/pg_conf/pg_service.conf:/etc/postgresql-common/pg_service.conf:ro
+     # As per the oq QGIS Server docs at
+     # https://github.com/gem/oq-qgis-server/blob/master/README.md#postgresql-connection-service-file-optional
+     # but wrong! 
+     #This works instead for the openquake/qgis-server:3 image
+     #- ./conf/pg_conf/pg_service.conf:/etc/pg_service.conf:ro
+
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 200m
+        max-file: '10'
+
+networks:
+  gis-stack:
+

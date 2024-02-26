@@ -1,4 +1,4 @@
-# Nix-centric project to set OGC compliance for QGIS
+# Nix-centric project to check OGC compliance for QGIS
 
 
 
