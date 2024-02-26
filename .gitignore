@@ -1,3 +1,5 @@
 pyogctest
 .direnv
+.venv
 .vscode-extensions
+data
