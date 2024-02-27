@@ -9,5 +9,5 @@ python pyogctest/pyogctest.py -s ogcapif -u http://localhost:8080/ogc/teamengine
 echo "🔫 Killing docker containers"
 docker-compose kill
 echo "🧹 Cleaning up"
-docker-compose rm
+docker-compose rm -f
 echo "🏆️ Done!"
