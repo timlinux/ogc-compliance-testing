@@ -39,7 +39,8 @@ services:
       # run the embedded copy of nginx
       SKIP_NGINX: 0
       # See notes at
-      QGIS_SERVER_PROJECT_FILE: "/io/data/teamengine_wms_130/teamengine_wms_130.qgs"
+      QGIS_PROJECT_FILE: "/io/data/teamengine_wms_130/teamengine_wms_130.qgs"
+      QGIS_SERVER_LANDING_PAGE_PROJECTS_DIRECTORIES: "/io/data/teamenging_wms_130"
       # Improve rendering performance
       QGIS_SERVER_PARALLEL_RENDERING: "true"
       QGIS_SERVER_MAX_THREADS: 4
@@ -103,6 +104,7 @@ services:
      #   |-- metadata.txt
      #   |-- __init__.py
      - ./qgis_plugins:/io/plugins
+     - ./nginx-confg:/etc/nginx/nginx.conf
      #  
      # Custom fonts are loaded into /usr/share/fonts. fc-cache is
      # run when container is started.
