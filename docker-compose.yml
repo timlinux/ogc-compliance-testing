@@ -104,7 +104,7 @@ services:
      #   |-- metadata.txt
      #   |-- __init__.py
      - ./qgis_plugins:/io/plugins
-     - ./nginx-confg:/etc/nginx/nginx.conf
+     - ./nginx.conf:/etc/nginx/nginx.conf
      #  
      # Custom fonts are loaded into /usr/share/fonts. fc-cache is
      # run when container is started.
